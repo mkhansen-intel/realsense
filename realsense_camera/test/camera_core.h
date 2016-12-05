@@ -58,6 +58,10 @@
 #include <librealsense/rs.h>
 #include <realsense_camera/constants.h>
 
+#include <dynamic_reconfigure/DoubleParameter.h>
+#include <dynamic_reconfigure/Reconfigure.h>
+#include <dynamic_reconfigure/Config.h>
+
 using namespace realsense_camera;
 
 //utest commandline args
@@ -100,6 +104,7 @@ bool g_infrared2_recv = false;
 bool g_fisheye_recv = false;
 bool g_imu_recv = false;
 bool g_pc_recv = false;
+bool g_depth_callback = false;
 
 float g_depth_avg = 0.0f;
 float g_color_avg = 0.0f;

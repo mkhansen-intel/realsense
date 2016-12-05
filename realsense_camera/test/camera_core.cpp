@@ -736,6 +736,48 @@ TEST(RealsenseTests, testCameraOptions)
   }
 }
 
+bool setDynamicBoolParam(string name, bool value)
+{
+  dynamic_reconfigure::ReconfigureRequest srv_req;
+  dynamic_reconfigure::ReconfigureResponse srv_resp;
+  dynamic_reconfigure::BoolParameter bool_param;
+  dynamic_reconfigure::Config config;
+
+  bool_param.name = name;
+  bool_param.value = value;
+  config.bools.push_back(bool_param);
+  srv_req.config = config;
+  return(ros::service::call("/camera/driver/set_parameters", srv_req, srv_resp));
+}
+
+void testDepthCallback(const sensor_msgs::ImageConstPtr &msg, const sensor_msgs::CameraInfoConstPtr &info_msg)
+{
+	g_depth_callback = true;
+}
+
+TEST(RealsenseTests, testEnableDepth)
+{
+  ros::NodeHandle nh_base;
+  ros::NodeHandle nh(nh_base, "camera");
+  ros::NodeHandle depth_nh(nh, DEPTH_NAMESPACE);
+  image_transport::ImageTransport depth_image_transport(depth_nh);
+  image_transport::CameraSubscriber test_sub;
+  test_sub = depth_image_transport.subscribeCamera(DEPTH_TOPIC, 1, testDepthCallback, 0);
+
+  // use dynamic reconfigure to disable then re-enable depth
+  EXPECT_TRUE(setDynamicBoolParam("enable_depth", false));
+  g_depth_callback = false;
+  ros::Duration(5).sleep();
+  // make sure depth received is false
+  EXPECT_FALSE(g_depth_callback);
+
+  EXPECT_TRUE(setDynamicBoolParam("enable_depth", true));
+  // wait 10 sec to make sure we get callback
+  ros::Duration(5).sleep();
+  // make sure depth received is true
+  EXPECT_TRUE(g_depth_callback);
+}
+
 TEST(RealsenseTests, testGetSettingsService)
 {
   // Verify the service is available
@@ -1004,7 +1046,6 @@ int main(int argc, char **argv) try
   duration.sec = 10;
   duration.sleep();
   ros::spinOnce();
-
   return RUN_ALL_TESTS();
 }
 catch(...) {} // catch the "testing::internal::<unnamed>::ClassUniqueToAlwaysTrue" from gtest
